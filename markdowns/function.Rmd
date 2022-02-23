@@ -1,0 +1,61 @@
+---
+title: "auto_power_gen_function"
+author: "Aaron Kreisberg"
+date: "2/14/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+# Function Example
+
+*Input*: Vehicle speed (m/s or mps) and assuming no headwind, vehicle area (m^2), vehicle mass (kg)
+
+*Outputs*: Automobile Power (Watts)
+
+*Parameters*: g acceleration due to gravity (m/s^2), rho_air density of air (kg/m^3) 
+
+What the function will do - compute power using the following equation - *body* of the function 
+
+$P = crolling∗m∗g∗V+1/2+ρ∗cdrag∗V^3$
+
+P is Power in watts, ρ is the density of air (~1000 $kg/m^3$), h is height in meters, r is flow rate in cubic meters per second, g is acceleration due to gravity of 9.8 $m/s^2$, $K_{Eff}$ is a coefficient of efficiency ranging from 0 to 1.
+
+```{r}
+power <- auto_power_gen_orig(speed = c(30, 22.2, 33.3, 11.1, 1.4), area = 16, mass = 31752) 
+
+power
+```
+
+```{r}
+power = as.data.frame(power)
+power$speed=c(30, 22.2, 33.3, 11.1, 1.4)
+
+ggplot(power, aes(speed, power)) + geom_line()
+```
+
+```{r}
+power_3 <- auto_power_gen_orig(speed = 120*(60/1000), area = 16, mass = 31752) 
+
+power_3
+```
+
+```{r}
+power_4 <- auto_power_gen_orig(speed = 40*(60/1000), area = 16, mass = 31752) 
+
+power_4
+```
+
+```{r}
+power_6 <- auto_power_gen_orig(speed = 5*(60/1000), area = 16, mass = 31752) 
+
+power_6
+```
+
+```{r}
+powers <- (power_1, power_2, power_3, power_4, power_5, power_6)
+```
+
