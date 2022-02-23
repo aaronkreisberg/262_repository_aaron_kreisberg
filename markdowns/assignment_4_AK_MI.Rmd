@@ -1,0 +1,34 @@
+---
+title: "Assignment_4_262"
+author: "Mikel Irigoyen & Aaron Kreisberg"
+date: "2/23/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(purrr)
+# read in necessary packages (tidyverse for data manipulation/visulaization and purrr for looping with pmap)
+```
+
+# Initial discussion of equation, function, and data
+
+Here we will discuss: 
+-the equation we selected
+-the function created to perform the equation
+-the function's inputs, outputs, and paramters
+-data utilized for 
+
+# Our Data (Inputs and Parameters)
+
+
+
+
+
+```{r}
+
+```
+
+
+
