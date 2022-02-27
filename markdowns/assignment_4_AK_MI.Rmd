@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(purrr)
-# read in necessary packages (tidyverse for data manipulation/visulaization and purrr for looping with pmap)
+# read in necessary packages (tidyverse for data manipulation/visualization and purrr for looping with pmap)
 ```
 
 # Initial discussion of equation, function, and data
@@ -17,18 +17,55 @@ library(purrr)
 Here we will discuss: 
 -the equation we selected
 -the function created to perform the equation
--the function's inputs, outputs, and paramters
--data utilized for 
+-the function's inputs, outputs, and parameters
+-data utilized for our equation
 
 # Our Data (Inputs and Parameters)
 
 
 
+```{r sampling2, eval=TRUE, echo=TRUE}
+
+source("../R/mannings.R")
+
+# generate data structure for possible creeks
+
+possible_creeks = data.frame(name = c("A","B","C"), n=c(0.040, 0.065, 0.075), r=25, s=.25)
 
 
-```{r}
 
+# calculate a flow area 
+
+possible_creeks$q = mannings(n = possible_creeks$n, r=possible_creeks$r, s=possible_creeks$s)
+
+head(possible_creeks)
 ```
 
 
+```{r}
+# Example error checking
+
+# we could add error checking to test for this
+
+power_gen = function(height, flow, rho=1000, g=9.8, Keff=0.8) {
+  
+  # make sure we have same number of flow and height's so we can match them
+  if (length(height) != length(flow)) return(" number of heights is different from number of flows")
+  # make sure inputs are positive and if not set as NA so result will be NA
+   height = ifelse( (height < 0), NA, height)
+  
+ # an alterative is to exit the function prematurely 
+  flow = ifelse((flow < 0), return("flow must be greater than zero"), flow)
+
+  #    return("Height cannot be less than 0")
+      
+  # calculate power
+    result = rho * height * flow * g * Keff
+  return(result)
+}
+
+power_gen(height=c(4,5,6, 8, 9, 20), flow=c(2,4,6))
+power_gen(height=c(4,5,6), flow=c(2,4,6))
+```
+```
 
