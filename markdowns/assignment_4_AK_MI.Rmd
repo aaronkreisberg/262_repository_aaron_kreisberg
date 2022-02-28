@@ -137,36 +137,37 @@ pmap from the purr package is used to perform the same looping performed by the 
 
 ```{r withpmap}
 
-# the first part, generating speeds is the same
-# what is I want to estimate average power use given  each car
+#Read in the possible creeks
 
 possible_creeks
 
-# the first part is the same as above
-# use sample to generate a distribution of speeds
+#generate a distribution of slopws
 
-# assume a log normal distribution of speeds with mean 100km/hr
-# recall our function needs speed in m/s not km/hr so we will also do a conversion
-# lets get a sample of a 200 speeds- we could also do this by actually measuring speeds
 
 nsample = 100
 mean_slope=0.25
 
+#normal distribution of slopes
+
 slopes = rnorm(mean=mean_slope, sd=0.1*mean_slope, nsample)
 summary(slopes)
+
+#plot to check for a normal distribution 
 
 plot(density(slopes), ylab="Distribution of Slopes in degrees")
 
 
-# how do we run each car for all speeds 
-# pmap runs a function for each value in a list of parameters, with other parameters set for each iteration
+ 
+# use pmap runs a function for each value in a list of parameters, with other parameters set for each iteration
 
 
 creekflows_2 = pmap(list(n = possible_creeks$n, r=possible_creeks$r), mannings, s=slopes)
 
-# lets turn to a data frame for easier graphing
-# we can add column names
+# data frame for easier graphing
+
 creekflows_2 = as.data.frame(creekflows_2, col.names=possible_creeks$name)
+
+# add slope values 
 
 creekflows_2 <- creekflows_2 %>% 
   mutate(slope = slopes)
@@ -175,9 +176,10 @@ head(creekflows_2)
 
 ```
 
-
+Graph the pmap values
 
 ```{r}
+#Use ggplot and geom_line to graph
 pmap_plot <- ggplot(creekflows_2, aes(x=slope)) +
   geom_line(aes(y=A), color = "red") +
   geom_line(aes(y=B), color = "blue") +
