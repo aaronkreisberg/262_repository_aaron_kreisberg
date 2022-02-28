@@ -3,7 +3,6 @@
 #'
 #' This function determines flow rate in an an open channel 
 #'
-#' @param v = Velocity, (ft/s)               
 #' @param a = Flow Area, (ft2)
 #' @param n = Manning's Roughness Coefficient
 #' @param r = Hydraulic Radius, (ft)
@@ -12,7 +11,8 @@
 #'
 #' function definition
 
-mannings = function(a= 3000, r, n, s) { 
-  q = (1.49/n)*(a)*(r^(2/3))*(s^(1/2))
+mannings = function(a= 3000, r, n, s) {
+  if (s < 0) return("slope must be greater then zero")
+    q = (1.49/n)*(a)*(r^(2/3))*(s^(1/2))
   return(q)
 } 

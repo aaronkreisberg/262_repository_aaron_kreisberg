@@ -15,10 +15,16 @@ library(purrr)
 # Initial discussion of equation, function, and data
 
 Here we will discuss: 
--the equation we selected
--the function created to perform the equation
+-the equation we selected. We used Manning's equation (q = (1.49/n)*(a)*(r^(2/3))*(s^(1/2)))
+-the function created to perform the equation (see manning.R)
 -the function's inputs, outputs, and parameters
+    a = Flow Area, (ft2)
+    n = Manning's Roughness Coefficient
+    r = Hydraulic Radius, (ft)
+    s= Channel Slope, (ft/ft)
+yielding q = Flow Rate, (ft3/s)
 -data utilized for our equation
+    was generated via given values and R 
 
 # Our Data (Inputs and Parameters)
 
@@ -28,44 +34,302 @@ Here we will discuss:
 
 source("../R/mannings.R")
 
-# generate data structure for possible creeks
+# generate intial data structure for possible creeks
 
-possible_creeks = data.frame(name = c("A","B","C"), n=c(0.040, 0.065, 0.075), r=25, s=.25)
-
-
+possible_creeks = data.frame(name = c("A","B","C"), n=c(0.060, 0.065, 0.070), r=c(15, 20, 25), s=.25)
 
 # calculate a flow area 
 
 possible_creeks$q = mannings(n = possible_creeks$n, r=possible_creeks$r, s=possible_creeks$s)
 
+# examine data
 head(possible_creeks)
 ```
 
+```{r}
+possible_creeks_error = data.frame(name = c("Creek A","Creek B","Creek C"), n=c(0.040, 0.065, 0.075), r=25, s=-.25)
+
+possible_creeks_error$q = mannings(n = possible_creeks_error$n, r=possible_creeks_error$r, s=possible_creeks_error$s)
+
+head(possible_creeks_error)
+
+#Error checking code in manning.r file in .R subdirectory
+#mannings = function(a= 3000, r, n, s) {
+#  if (s = ifelse(s < 0), return("slope must be greater then zero"), s)
+#    q = (1.49/n)*(a)*(r^(2/3))*(s^(1/2))
+#  return(q)
+#}
+
+```
+
+
 
 ```{r}
-# Example error checking
+nsample = 100
+mean_slope=0.25
 
-# we could add error checking to test for this
+slopes = rnorm(mean=mean_slope, sd=0.1*mean_slope, nsample)
+summary(slopes)
 
-power_gen = function(height, flow, rho=1000, g=9.8, Keff=0.8) {
-  
-  # make sure we have same number of flow and height's so we can match them
-  if (length(height) != length(flow)) return(" number of heights is different from number of flows")
-  # make sure inputs are positive and if not set as NA so result will be NA
-   height = ifelse( (height < 0), NA, height)
-  
- # an alterative is to exit the function prematurely 
-  flow = ifelse((flow < 0), return("flow must be greater than zero"), flow)
+plot(density(slopes), ylab="Distribution of Slopes in degrees")
 
-  #    return("Height cannot be less than 0")
-      
-  # calculate power
-    result = rho * height * flow * g * Keff
-  return(result)
+creek_flows = as.data.frame(matrix(nrow=length(slopes), ncol=nrow(possible_creeks)))
+
+head(creek_flows)
+
+nrow(possible_creeks)
+for (i in 1:nrow(possible_creeks)) {
+  creek_flows[,i] = mannings(n=possible_creeks$n[i], r=possible_creeks$r[i], s=slopes)
 }
 
-power_gen(height=c(4,5,6, 8, 9, 20), flow=c(2,4,6))
-power_gen(height=c(4,5,6), flow=c(2,4,6))
+# now it looks like above
+head(creek_flows)
+```
+
+
+```{r withpmap}
+
+# the first part, generating speeds is the same
+# what is I want to estimate average power use given  each car
+
+possible_creeks
+
+# the first part is the same as above
+# use sample to generate a distribution of speeds
+
+# assume a log normal distribution of speeds with mean 100km/hr
+# recall our function needs speed in m/s not km/hr so we will also do a conversion
+# lets get a sample of a 200 speeds- we could also do this by actually measuring speeds
+
+nsample = 100
+mean_slope=0.25
+
+slopes = rnorm(mean=mean_slope, sd=0.1*mean_slope, nsample)
+summary(slopes)
+
+plot(density(slopes), ylab="Distribution of Slopes in degrees")
+
+
+# how do we run each car for all speeds 
+# pmap runs a function for each value in a list of parameters, with other parameters set for each iteration
+
+
+creekflows_2 = pmap(list(n = possible_creeks$n, r=possible_creeks$r), mannings, s=slopes)
+
+# lets turn to a data frame for easier graphing
+# we can add column names
+creekflows_2 = as.data.frame(creekflows_2, col.names=possible_creeks$name)
+
+head(creekflows_2)
+
+```
+
+```{r}
+creekflows_2 = creekflows_2 %>% pivot_longer(cols=everything(), names_to="creek", values_to="flow rate")
+head(creekflows_2)
+
+method2_plot = ggplot(creekflows_2, aes(name,flow, fill=car))+geom_boxplot()+ggtitle("pmap")
+```
+
+# apply family of functions does this to - FYI
+# what mapply does is run the function for each row in parameters listed, using values for other parameters listed in MoreArgs EACH time - a column for row in parameter list is returned
+powerall2b = mapply(FUN=autopower, A = possible_cars$area, m=possible_cars$mass, MoreArgs = list(V=speeds)  )
+# we can add column names
+colnames(powerall2b)=possible_cars$name
+
+head(powerall2b)
+head(powerall2)
+
+
+# for plotting sometimes its useful to turn columns in to rows
+powerallr2 = powerall2 %>% pivot_longer(cols=everything(), names_to="car", values_to="power")
+head(powerallr2)
+
+# quick visualization
+
+method2_plot = ggplot(powerallr2, aes(car,power, fill=car))+geom_boxplot()+ggtitle("pmap")
+method2_plot
+
+# put plots side by side
+# to confirm that they look similar
+ggarrange(method1_plot, method2_plot)
+
+# compare values
+head(powerallr2)
+head(powerallr1)
+
+# not exactly the same - why?
+# recall that we sample speeds!
+
+# but we can compare means (also using  map :)
+# map runs the function (here - mean), over each column 
+# they are close but still not exact, so statistics such as means and quantiles are # similar, and relative difference between cars is the same
+powerall1 %>% map(mean)
+powerall2 %>% map(mean)
+
+# upper 90% quantile
+powerall1 %>% map(quantile, probs=0.9)
+powerall2 %>% map(quantile, probs=0.9)
 ```
 ```
+
+```{r}
+# Second using R built in tools
+
+Doing this by hand would be hard if we had many different cars - can we automate?
+
+YES
+
+first lets try *pmap*  
+
+*pmap* is available in the *purr* library
+
+*mapply* is another R option
+
+```{r withpmap}
+
+# the first part, generating speeds is the same
+# what is I want to estimate average power use given  each car
+
+possible_cars
+
+# the first part is the same as above
+# use sample to generate a distribution of speeds
+
+# assume a log normal distribution of speeds with mean 100km/hr
+# recall our function needs speed in m/s not km/hr so we will also do a conversion
+# lets get a sample of a 200 speeds- we could also do this by actually measuring speeds
+
+nsample = 200
+mean_speed = log(100*0.277)
+
+speeds = rlnorm(mean=mean_speed, sd=0.1*mean_speed, nsample)
+summary(speeds)
+
+plot(density(speeds), ylab="Distribution of Speeds in (m/s)")
+
+
+# how do we run each car for all speeds 
+# pmap runs a function for each value in a list of parameters, with other parameters set for each iteration
+
+
+powerall2 = pmap(list(A = possible_cars$area, m=possible_cars$mass), autopower, V=speeds)
+
+# lets turn to a data frame for easier graphing
+# we can add column names
+powerall2 = as.data.frame(powerall2, col.names=possible_cars$name)
+
+# apply family of functions does this to - FYI
+# what mapply does is run the function for each row in parameters listed, using values for other parameters listed in MoreArgs EACH time - a column for row in parameter list is returned
+powerall2b = mapply(FUN=autopower, A = possible_cars$area, m=possible_cars$mass, MoreArgs = list(V=speeds)  )
+# we can add column names
+colnames(powerall2b)=possible_cars$name
+
+head(powerall2b)
+head(powerall2)
+
+
+# for plotting sometimes its useful to turn columns in to rows
+powerallr2 = powerall2 %>% pivot_longer(cols=everything(), names_to="car", values_to="power")
+head(powerallr2)
+
+# quick visualization
+
+method2_plot = ggplot(powerallr2, aes(car,power, fill=car))+geom_boxplot()+ggtitle("pmap")
+method2_plot
+
+# put plots side by side
+# to confirm that they look similar
+ggarrange(method1_plot, method2_plot)
+
+# compare values
+head(powerallr2)
+head(powerallr1)
+
+# not exactly the same - why?
+# recall that we sample speeds!
+
+# but we can compare means (also using  map :)
+# map runs the function (here - mean), over each column 
+# they are close but still not exact, so statistics such as means and quantiles are # similar, and relative difference between cars is the same
+powerall1 %>% map(mean)
+powerall2 %>% map(mean)
+
+# upper 90% quantile
+powerall1 %>% map(quantile, probs=0.9)
+powerall2 %>% map(quantile, probs=0.9)
+```
+
+# Third - classic looping *for*
+
+*pmap* works quickly but it is unique to R
+Other programming language (and R) use what are called loops - where repetition is more explicit
+
+Lets do this one more time using a *for* loop
+
+```{r withforloop}
+
+# the first part, generating speeds is the same
+# what is I want to estimate average power use given  each car
+
+possible_creeks
+
+# use sample to generate a distribution of speeds
+
+# assume a log normal distribution of speeds with mean 100km/hr
+# recall our function needs speed in m/s not km/hr so we will also do a conversion
+# lets get a sample of a 200 speeds- we could also do this by actually measuring speeds
+
+nsample = 200
+mean_slope = log(100*0.277)
+
+speeds = rlnorm(mean=mean_speed, sd=0.1*mean_speed, nsample)
+summary(speeds)
+
+plot(density(speeds), ylab="Distribution of Speeds in (m/s)")
+
+
+# how do we run each car for all speeds 
+# we use a for loop to cycle through
+# we need to create a data frame to store results - as above
+# one column for each car and one row for each speed
+
+powerall3 = as.data.frame(matrix(nrow=length(speeds), ncol=nrow(possible_cars)))
+# because we don't initialize it - values are NA
+head(powerall3)
+
+# how many cars area there
+nrow(possible_cars)
+# for loops use an index - in this case "i" but you could use anything - it repeats
+# anything between the {} for each values of i between 1 and nrow(possible_car) (which is 3 in our case)
+
+# index in to a matrix (like powerall3) is by row and column powerall3[2,5] is 2nd row and 5th column
+for (i in 1:nrow(possible_cars)) {
+  powerall3[,i] = autopower(A=possible_cars$area[i], m=possible_cars$mass[i], V=speeds)
+}
+
+# now it looks like above
+head(powerall3)
+# we can add column names
+colnames(powerall3)=possible_cars$name
+
+# plotting is the same as above
+
+# for plotting sometimes its useful to turn columns in to rows
+powerallr3 = powerall3 %>% pivot_longer(cols=everything(), names_to="car", values_to="power")
+head(powerallr3)
+
+# quick visualization
+method3_plot = ggplot(powerallr3, aes(car,power, fill=car))+geom_boxplot()+ggtitle("For Loop")
+
+ggarrange(method1_plot, method2_plot, method3_plot, nrow=3)
+
+powerall1 %>% map(mean)
+powerall2 %>% map(mean)
+powerall3 %>% map(mean)
+
+```
+
+
+
 
