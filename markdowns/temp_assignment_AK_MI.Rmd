@@ -1,0 +1,43 @@
+---
+title: "Temperature Assignment "
+author: "Mikel Irigoyen & Aaron Kreisberg"
+date: "3/2/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(purrr)
+library(here)
+library(tidyr)
+library(stringr)
+
+
+```
+
+```{r}
+tmax <- read_tsv(here("data", "tmax.txt")) %>% 
+  separate(col = "tmax date",
+           sep = " ",
+           into = c("temp", "date"),
+           remove = TRUE)
+```
+
+```{r}
+source(here("R/risk_exp.R"))
+risk
+```
+
+```{r}
+# normal distribution of age
+age = rnorm(n = 20, mean = 50, sd = 20)
+# make a data frame of age data
+age = as.data.frame(age)
+```
+
+```{r}
+risk(temp = tmax$temp, age=age)
+
+```
+
